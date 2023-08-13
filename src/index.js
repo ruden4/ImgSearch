@@ -9,7 +9,6 @@ const loadMoreBtnEl = document.querySelector('.load-more');
 loadMoreBtnEl.classList.add("is-hidden");
 
 let queryParam = "";
-
 let page = 1;
 
 //ПОЛУЧАЕМ ЗНАЧЕНИЕ ИНПУТА И ПЕРЕДАЕМ ЕГО В ПЕРЕМЕННУЮ.
