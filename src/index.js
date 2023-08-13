@@ -5,16 +5,21 @@ const API_KEY = "38794052-11ed7c3031d83bd0448aacf33";
 const formEl = document.querySelector('#search-form');
 const galleryEl = document.querySelector('.gallery');
 const loadMoreBtnEl = document.querySelector('.load-more');
-
 loadMoreBtnEl.classList.add("is-hidden");
 
 let queryParam = "";
 let page = 1;
+let totalHits = null;
 
 //ПОЛУЧАЕМ ЗНАЧЕНИЕ ИНПУТА И ПЕРЕДАЕМ ЕГО В ПЕРЕМЕННУЮ.
 formEl.addEventListener('input', onInputHandler); 
 function onInputHandler(e) {
   queryParam = e.target.value.trim();
+  clearGallery();
+}
+function clearGallery() {
+  galleryEl.innerHTML = "";
+  loadMoreBtnEl.classList.add("is-hidden");
 }
 
 //ЗАГРУЖАЕМ ГАЛЕРЕЮ ИСХОДЯ ИЗ ПОИСКОВОГО ЗАПРОСА
@@ -32,9 +37,12 @@ async function fetchImages(query) {
     safesearch: "true",
     per_page: 40
 });
+const perPage = searchParams.get("per_page");
+
     const responce = await axios
     .get(`${BASE_URL}?key=${API_KEY}&q="${query}"&${searchParams.toString()}&page=${page}`);
     const data = responce.data.hits;
+    totalHits = responce.data.totalHits;
 
     if (data.length === 0) {
       console.log("Sorry, there are no images matching your search query. Please try again.")
@@ -45,7 +53,7 @@ async function fetchImages(query) {
       <img src="${webformatURL}" 
       alt="${tags}" 
       loading="lazy"
-      height="300px" />
+      height="270px" />
       <div class="info">
         <p class="info-item">
           <b>Likes ${likes}</b>
@@ -63,6 +71,12 @@ async function fetchImages(query) {
     </div>
       `).join('')
       galleryEl.insertAdjacentHTML("beforeend", markup);
+      page += 1;
+      loadMoreBtnEl.classList.remove("is-hidden");
+    }
+    if (page * perPage >= totalHits) {
+      loadMoreBtnEl.classList.add("is-hidden");
+    } else {
       loadMoreBtnEl.classList.remove("is-hidden");
     }
 } 
@@ -76,77 +90,5 @@ fetchImages(queryParam);
 loadMoreBtnEl.addEventListener('click', onLoadMoreHandle)
 
 function onLoadMoreHandle() {
-page += 1;
 fetchImages(queryParam);
 }
-
-
-
-// const { webformatURL, largeImageURL, tags, likes, views, comments, downloads} = data;
-// webformatURL - посилання на маленьке зображення для списку карток.
-// largeImageURL - посилання на велике зображення.
-// tags - рядок з описом зображення. Підійде для атрибуту alt.
-// likes - кількість лайків.
-// views - кількість переглядів.
-// comments - кількість коментарів.
-// downloads - кількість завантажень.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{/* <div class="photo-card">
-        <img src="" 
-        alt="" 
-        loading="lazy"
-        height="300px" />
-        <div class="info">
-          <p class="info-item">
-            <b>Likes</b>
-          </p>
-          <p class="info-item">
-            <b>Views</b>
-          </p>
-          <p class="info-item">
-            <b>Comments</b>
-          </p>
-          <p class="info-item">
-            <b>Downloads</b>
-          </p>
-        </div>
-      </div> */}
