@@ -1,94 +1,81 @@
-import axios from "axios";
-const BASE_URL = "https://pixabay.com/api/";
-const API_KEY = "38794052-11ed7c3031d83bd0448aacf33";
-
+import { fetchImages } from "../src/fetch-API";
+import Notiflix from 'notiflix';
 const formEl = document.querySelector('#search-form');
 const galleryEl = document.querySelector('.gallery');
 const loadMoreBtnEl = document.querySelector('.load-more');
 loadMoreBtnEl.classList.add("is-hidden");
 
 let queryParam = "";
-let page = 1;
+export let page = 1;
 let totalHits = null;
 
 //ПОЛУЧАЕМ ЗНАЧЕНИЕ ИНПУТА И ПЕРЕДАЕМ ЕГО В ПЕРЕМЕННУЮ.
 formEl.addEventListener('input', onInputHandler); 
 function onInputHandler(e) {
   queryParam = e.target.value.trim();
-  clearGallery();
-}
-function clearGallery() {
-  galleryEl.innerHTML = "";
-  loadMoreBtnEl.classList.add("is-hidden");
 }
 
-//ЗАГРУЖАЕМ ГАЛЕРЕЮ ИСХОДЯ ИЗ ПОИСКОВОГО ЗАПРОСА
+//ОБРАБОТКА САБМИТА.(ЗАГРУЗКА ФОТО НА СТРАНИЦУ)
 formEl.addEventListener('submit', onSubmitHandler);
-
-async function fetchImages(query) { 
-  
-  if (!query) {
-    return console.log('Please, write something in search input!')
+function onSubmitHandler(e) {
+    e.preventDefault();
+    clearGallery();
+    createMarkup();
   }
 
-  const searchParams = new URLSearchParams({
-    image_type: "photo",
-    orientation: "horizontal",
-    safesearch: "true",
-    per_page: 40
-});
-const perPage = searchParams.get("per_page");
+//ФУНКЦИЯ СОЗДАНИЯ РАЗМЕМКТИ НА ОСНОВЕ ПОЛУЧЕННЫХ ДАННЫХ.
+async function createMarkup() {
+    try {
+        const response = await fetchImages(queryParam, page);
+        const hits = response.data.hits;
+        const markup = hits.map(({ webformatURL, tags, likes, views, comments, downloads }) => {
+            return `
+                <div class="photo-card">
+                    <img src="${webformatURL}" 
+                        alt="${tags}" 
+                        loading="lazy"
+                        height="270px" />
+                    <div class="info">
+                        <p class="info-item">
+                            <b>Likes ${likes}</b>
+                        </p>
+                        <p class="info-item">
+                            <b>Views ${views}</b>
+                        </p>
+                        <p class="info-item">
+                            <b>Comments ${comments}</b>
+                        </p>
+                        <p class="info-item">
+                            <b>Downloads ${downloads}</b>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
-    const responce = await axios
-    .get(`${BASE_URL}?key=${API_KEY}&q="${query}"&${searchParams.toString()}&page=${page}`);
-    const data = responce.data.hits;
-    totalHits = responce.data.totalHits;
+        galleryEl.insertAdjacentHTML("beforeend", markup);
 
-    if (data.length === 0) {
-      console.log("Sorry, there are no images matching your search query. Please try again.")
-    } else {
-      const markup = data
-      .map(({webformatURL, largeImageURL, tags, likes, views, comments, downloads}) => `
-      <div class="photo-card">
-      <img src="${webformatURL}" 
-      alt="${tags}" 
-      loading="lazy"
-      height="270px" />
-      <div class="info">
-        <p class="info-item">
-          <b>Likes ${likes}</b>
-        </p>
-        <p class="info-item">
-          <b>Views ${views}</b>
-        </p>
-        <p class="info-item">
-          <b>Comments ${comments}</b>
-        </p>
-        <p class="info-item">
-          <b>Downloads ${downloads}</b>
-        </p>
-      </div>
-    </div>
-      `).join('')
-      galleryEl.insertAdjacentHTML("beforeend", markup);
-      page += 1;
-      loadMoreBtnEl.classList.remove("is-hidden");
+        if (hits.length > 0) {
+            loadMoreBtnEl.classList.remove("is-hidden");
+        } else {
+            loadMoreBtnEl.classList.add("is-hidden");
+            Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.");
+        }
+    } catch (error) {
+        console.error(error);
     }
-    if (page * perPage >= totalHits) {
-      loadMoreBtnEl.classList.add("is-hidden");
-    } else {
-      loadMoreBtnEl.classList.remove("is-hidden");
-    }
-} 
-
-//ФУНКЦИЯ ЗАПРОСА ДАННЫХ
-function onSubmitHandler(e) {
-  e.preventDefault();
-fetchImages(queryParam);
 }
 
+//ОБРАБОТКА КНОПКИ LOAD MORE
 loadMoreBtnEl.addEventListener('click', onLoadMoreHandle)
-
 function onLoadMoreHandle() {
-fetchImages(queryParam);
+    page += 1;
+    createMarkup();
 }
+
+//ФУНКЦИЯ ОЧИСТКИ ГАЛЕРЕИ ПРИ НОВОМ ПОИСКЕ.
+function clearGallery() {
+    galleryEl.innerHTML = "";
+    loadMoreBtnEl.classList.add("is-hidden");
+    page = 1;
+  }
