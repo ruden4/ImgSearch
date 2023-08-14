@@ -57,6 +57,9 @@ async function createMarkup() {
 
         if (hits.length > 0) {
             loadMoreBtnEl.classList.remove("is-hidden");
+            totalHits = response.data.totalHits;
+            const totalPages = Math.ceil(totalHits / 40);
+            if (page >= totalPages) {loadMoreBtnEl.classList.add("is-hidden")}
         } else {
             loadMoreBtnEl.classList.add("is-hidden");
             Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.");
